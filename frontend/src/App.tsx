@@ -1,24 +1,24 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import Dashboard from "./pages/Dashboard";
+import { useAuthStore } from "./store/authStore";
 
 function App() {
-  const [message, setMessage] = useState("Loading...");
-
-  useEffect(() => {
-    axios
-      .get("http://localhost:5000/api/hello")
-      .then((response) => {
-        setMessage(response.data.message);
-      })
-      .catch(() => {
-        setMessage("Failed to reach backend.");
-      });
-  }, []);
+  const token = useAuthStore((state) => state.token);
 
   return (
-    <div className="flex items-center justify-center h-screen">
-      <h1 className="text-2xl font-bold text-blue-600">{message}</h1>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route
+          path="/dashboard"
+          element={token ? <Dashboard /> : <Navigate to="/login" />}
+        />
+        <Route path="*" element={<Navigate to={token ? "/dashboard" : "/login"} />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
