@@ -2,6 +2,7 @@ import { Response } from "express";
 import axios from "axios";
 import Repository from "../models/Repository";
 import { AuthRequest } from "../middleware/authMiddleware";
+import { repositoryQueue } from "../queues/repositoryQueue";
 
 export const addRepository = async (req: AuthRequest, res: Response) => {
   try {
@@ -37,6 +38,10 @@ export const addRepository = async (req: AuthRequest, res: Response) => {
       owner,
       name,
       status: "pending",
+    });
+
+    await repositoryQueue.add("process-repository", {
+      repositoryId: repository._id.toString(),
     });
 
     res.status(201).json({ repository });
