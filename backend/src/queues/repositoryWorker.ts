@@ -8,6 +8,8 @@ import { connection } from "./connection";
 import Repository from "../models/Repository";
 import { connectDB } from "../config/db";
 import { chunkFile } from "../utils/codeChunker";
+import { generateEmbedding } from "../utils/embeddings";
+import CodeChunk from "../models/CodeChunk";
 
 dotenv.config();
 connectDB();
@@ -99,10 +101,36 @@ const worker = new Worker(
     }
 
     console.log(`Generated ${allChunks.length} total chunks`);
-    console.log("Sample chunk:", allChunks[0]);
 
     // Clean up: delete the downloaded files now that we've extracted what we need
     fs.rmSync(extractPath, { recursive: true, force: true });
+
+    console.log("Generating embeddings and saving to database...");
+
+    // Delete any old chunks from a previous run of this repo, to avoid duplicates
+    await CodeChunk.deleteMany({ repositoryId });
+
+    const BATCH_SIZE = 20;
+    for (let i = 0; i < allChunks.length; i += BATCH_SIZE) {
+      const batch = allChunks.slice(i, i + BATCH_SIZE);
+
+      const docsToInsert = await Promise.all(
+        batch.map(async (chunk) => ({
+          repositoryId,
+          filePath: chunk.filePath.replace(/\\/g, "/"), // normalize Windows backslashes
+          content: chunk.content,
+          startLine: chunk.startLine,
+          endLine: chunk.endLine,
+          type: chunk.type,
+          embedding: await generateEmbedding(chunk.content),
+        }))
+      );
+
+      await CodeChunk.insertMany(docsToInsert);
+      console.log(`Embedded and saved ${Math.min(i + BATCH_SIZE, allChunks.length)}/${allChunks.length} chunks`);
+    }
+
+    console.log("All chunks embedded and saved.");
 
     repository.fileCount = codeFiles.length;
     repository.status = "ready";
