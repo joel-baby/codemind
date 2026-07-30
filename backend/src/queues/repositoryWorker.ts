@@ -1,12 +1,49 @@
 import { Worker } from "bullmq";
 import axios from "axios";
+import fs from "fs";
+import path from "path";
+import * as tar from "tar";
+import dotenv from "dotenv";
 import { connection } from "./connection";
 import Repository from "../models/Repository";
-import dotenv from "dotenv";
 import { connectDB } from "../config/db";
 
 dotenv.config();
 connectDB();
+
+const TEMP_DIR = path.join(__dirname, "..", "temp");
+
+// File extensions we actually care about (skip images, fonts, lockfiles, etc.)
+const CODE_EXTENSIONS = [
+  ".js", ".jsx", ".ts", ".tsx", ".py", ".java", ".go", ".rb",
+  ".php", ".c", ".cpp", ".h", ".cs", ".rs", ".md",
+];
+
+// Folders we never want to look inside
+const IGNORED_FOLDERS = [
+  "node_modules", ".git", "dist", "build", "vendor", ".next", "coverage",
+];
+
+function getAllCodeFiles(dir: string, fileList: string[] = []): string[] {
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+
+    if (entry.isDirectory()) {
+      if (!IGNORED_FOLDERS.includes(entry.name)) {
+        getAllCodeFiles(fullPath, fileList);
+      }
+    } else {
+      const ext = path.extname(entry.name);
+      if (CODE_EXTENSIONS.includes(ext)) {
+        fileList.push(fullPath);
+      }
+    }
+  }
+
+  return fileList;
+}
 
 const worker = new Worker(
   "repository-processing",
@@ -23,28 +60,39 @@ const worker = new Worker(
 
     console.log(`Processing repo: ${repository.owner}/${repository.name}`);
 
-    // Step 1: Get the default branch name
     const repoInfo = await axios.get(
       `https://api.github.com/repos/${repository.owner}/${repository.name}`
     );
     const defaultBranch = repoInfo.data.default_branch;
 
-    // Step 2: Get the full file tree of that branch
-    const treeResponse = await axios.get(
-      `https://api.github.com/repos/${repository.owner}/${repository.name}/git/trees/${defaultBranch}?recursive=1`
-    );
+    const extractPath = path.join(TEMP_DIR, repositoryId);
+    fs.mkdirSync(extractPath, { recursive: true });
 
-    const files = treeResponse.data.tree.filter(
-      (item: any) => item.type === "blob"
-    );
+    const tarballUrl = `https://codeload.github.com/${repository.owner}/${repository.name}/tar.gz/${defaultBranch}`;
 
-    console.log(`Found ${files.length} files in ${repository.owner}/${repository.name}`);
+    console.log("Downloading repository archive...");
+    const response = await axios.get(tarballUrl, { responseType: "stream" });
 
-    repository.fileCount = files.length;
+    await new Promise((resolve, reject) => {
+      response.data
+        .pipe(tar.extract({ cwd: extractPath }))
+        .on("finish", resolve)
+        .on("error", reject);
+    });
+
+    console.log("Extraction complete. Scanning for code files...");
+
+    const codeFiles = getAllCodeFiles(extractPath);
+    console.log(`Found ${codeFiles.length} relevant code files`);
+
+    // Clean up: delete the downloaded files, we'll add real processing next
+    fs.rmSync(extractPath, { recursive: true, force: true });
+
+    repository.fileCount = codeFiles.length;
     repository.status = "ready";
     await repository.save();
 
-    return { fileCount: files.length };
+    return { fileCount: codeFiles.length };
   },
   { connection }
 );
