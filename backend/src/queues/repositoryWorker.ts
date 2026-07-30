@@ -7,6 +7,7 @@ import dotenv from "dotenv";
 import { connection } from "./connection";
 import Repository from "../models/Repository";
 import { connectDB } from "../config/db";
+import { chunkFile } from "../utils/codeChunker";
 
 dotenv.config();
 connectDB();
@@ -85,14 +86,29 @@ const worker = new Worker(
     const codeFiles = getAllCodeFiles(extractPath);
     console.log(`Found ${codeFiles.length} relevant code files`);
 
-    // Clean up: delete the downloaded files, we'll add real processing next
+    console.log("Chunking files...");
+    let allChunks: ReturnType<typeof chunkFile> = [];
+
+    for (const filePath of codeFiles) {
+      const relativePath = path.relative(extractPath, filePath);
+      const chunks = chunkFile(filePath).map((chunk) => ({
+        ...chunk,
+        filePath: relativePath, // store the clean relative path, not the temp folder path
+      }));
+      allChunks = allChunks.concat(chunks);
+    }
+
+    console.log(`Generated ${allChunks.length} total chunks`);
+    console.log("Sample chunk:", allChunks[0]);
+
+    // Clean up: delete the downloaded files now that we've extracted what we need
     fs.rmSync(extractPath, { recursive: true, force: true });
 
     repository.fileCount = codeFiles.length;
     repository.status = "ready";
     await repository.save();
 
-    return { fileCount: codeFiles.length };
+    return { fileCount: codeFiles.length, chunkCount: allChunks.length };
   },
   { connection }
 );
