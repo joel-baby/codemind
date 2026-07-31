@@ -105,3 +105,37 @@ ${context}`;
     res.end();
   }
 };
+
+export const getConversations = async (req: AuthRequest, res: Response) => {
+  try {
+    const { repositoryId } = req.params;
+    const conversations = await Conversation.find({
+      userId: req.userId,
+      repositoryId,
+    }).sort({ updatedAt: -1 });
+
+    res.status(200).json({ conversations });
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong", error });
+  }
+};
+
+export const getMessages = async (req: AuthRequest, res: Response) => {
+  try {
+    const { conversationId } = req.params;
+
+    const conversation = await Conversation.findOne({
+      _id: conversationId,
+      userId: req.userId,
+    });
+
+    if (!conversation) {
+      return res.status(404).json({ message: "Conversation not found" });
+    }
+
+    const messages = await Message.find({ conversationId }).sort({ createdAt: 1 });
+    res.status(200).json({ messages });
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong", error });
+  }
+};
