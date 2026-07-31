@@ -19,9 +19,12 @@ function Dashboard() {
 
   const fetchRepositories = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/repositories", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.get(
+        "http://localhost:5000/api/repositories",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       setRepositories(response.data.repositories);
     } catch (err) {
       console.error("Failed to fetch repositories", err);
@@ -30,7 +33,6 @@ function Dashboard() {
 
   useEffect(() => {
     fetchRepositories();
-    // Poll every 3 seconds so "processing" repos update to "ready" automatically
     const interval = setInterval(fetchRepositories, 3000);
     return () => clearInterval(interval);
   }, []);
@@ -44,7 +46,7 @@ function Dashboard() {
       await axios.post(
         "http://localhost:5000/api/repositories",
         { githubUrl },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setGithubUrl("");
       fetchRepositories();
@@ -52,6 +54,20 @@ function Dashboard() {
       setError(err.response?.data?.message || "Something went wrong");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (e: React.MouseEvent, repoId: string) => {
+    e.stopPropagation();
+    if (!confirm("Delete this repository and all its chat history?")) return;
+
+    try {
+      await axios.delete(`http://localhost:5000/api/repositories/${repoId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchRepositories();
+    } catch (err) {
+      console.error("Failed to delete repository", err);
     }
   };
 
@@ -98,33 +114,58 @@ function Dashboard() {
       </form>
 
       {error && (
-        <p className="bg-red-100 text-red-600 text-sm p-2 rounded mb-4">{error}</p>
+        <p className="bg-red-100 text-red-600 text-sm p-2 rounded mb-4">
+          {error}
+        </p>
       )}
 
       <div className="space-y-3">
         {repositories.length === 0 && (
-          <p className="text-gray-500">No repositories yet. Add one above to get started.</p>
+          <p className="text-gray-500">
+            No repositories yet. Add one above to get started.
+          </p>
         )}
 
         {repositories.map((repo) => (
           <div
             key={repo._id}
-            onClick={() => repo.status === "ready" && navigate(`/chat/${repo._id}`)}
-            className={`border rounded p-4 flex justify-between items-center ${
-              repo.status === "ready" ? "cursor-pointer hover:bg-gray-50" : "cursor-default"
+            onClick={() =>
+              repo.status === "ready" && navigate(`/chat/${repo._id}`)
+            }
+            className={`border rounded p-4 ${
+              repo.status === "ready"
+                ? "cursor-pointer hover:bg-gray-50"
+                : "cursor-default"
             }`}
           >
-            <div>
-              <p className="font-semibold">
-                {repo.owner}/{repo.name}
-              </p>
-              <p className="text-sm text-gray-500">{repo.fileCount} files</p>
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="font-semibold">
+                  {repo.owner}/{repo.name}
+                </p>
+                <p className="text-sm text-gray-500">{repo.fileCount} files</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span
+                  className={`text-xs px-2 py-1 rounded-full ${statusColors[repo.status]}`}
+                >
+                  {repo.status}
+                </span>
+                <button
+                  onClick={(e) => handleDelete(e, repo._id)}
+                  className="text-red-500 hover:text-red-700 text-sm"
+                  title="Delete repository"
+                >
+                  🗑️
+                </button>
+              </div>
             </div>
-            <span
-              className={`text-xs px-2 py-1 rounded-full ${statusColors[repo.status]}`}
-            >
-              {repo.status}
-            </span>
+
+            {repo.status === "failed" && repo.errorMessage && (
+              <p className="text-xs text-red-600 mt-2">
+                Error: {repo.errorMessage}
+              </p>
+            )}
           </div>
         ))}
       </div>

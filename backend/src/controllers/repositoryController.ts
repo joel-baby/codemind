@@ -3,6 +3,8 @@ import axios from "axios";
 import Repository from "../models/Repository";
 import { AuthRequest } from "../middleware/authMiddleware";
 import { repositoryQueue } from "../queues/repositoryQueue";
+import CodeChunk from "../models/CodeChunk";
+import Conversation from "../models/Conversation";
 
 export const addRepository = async (req: AuthRequest, res: Response) => {
   try {
@@ -59,6 +61,25 @@ export const getRepositories = async (req: AuthRequest, res: Response) => {
       createdAt: -1,
     });
     res.status(200).json({ repositories });
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong", error });
+  }
+};
+
+export const deleteRepository = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const repository = await Repository.findOne({ _id: id, userId: req.userId });
+    if (!repository) {
+      return res.status(404).json({ message: "Repository not found" });
+    }
+
+    await CodeChunk.deleteMany({ repositoryId: id });
+    await Conversation.deleteMany({ repositoryId: id });
+    await Repository.findByIdAndDelete(id);
+
+    res.status(200).json({ message: "Repository deleted" });
   } catch (error) {
     res.status(500).json({ message: "Something went wrong", error });
   }

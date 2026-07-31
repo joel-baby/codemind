@@ -88,6 +88,14 @@ const worker = new Worker(
     const codeFiles = getAllCodeFiles(extractPath);
     console.log(`Found ${codeFiles.length} relevant code files`);
 
+    if (codeFiles.length === 0) {
+      fs.rmSync(extractPath, { recursive: true, force: true });
+      repository.status = "failed";
+      repository.errorMessage = "No supported code files found in this repository.";
+      await repository.save();
+      return { fileCount: 0 };
+    }
+
     console.log("Chunking files...");
     let allChunks: ReturnType<typeof chunkFile> = [];
 
