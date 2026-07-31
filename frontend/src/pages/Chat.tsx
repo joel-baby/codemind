@@ -128,7 +128,6 @@ function Chat() {
           }
 
           if (data.done) {
-            const isNewConversation = !conversationId;
             setConversationId(data.conversationId);
             setMessages((prev) => {
               const updated = [...prev];
@@ -138,7 +137,7 @@ function Chat() {
               };
               return updated;
             });
-            if (isNewConversation) fetchConversations();
+            fetchConversations();
           }
         }
       }

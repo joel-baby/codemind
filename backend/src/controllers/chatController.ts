@@ -62,6 +62,18 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
     // Search for relevant code chunks
     const chunks = await searchCodeChunks(question, repositoryId, 5);
 
+    if (chunks.length === 0) {
+      res.setHeader("Content-Type", "text/event-stream");
+      res.write(
+        `data: ${JSON.stringify({
+          token: "I couldn't find any relevant code in this repository to answer that question. Try rephrasing, or ask about a different part of the codebase.",
+        })}\n\n`
+      );
+      res.write(`data: ${JSON.stringify({ done: true, conversationId: conversation._id, citations: [] })}\n\n`);
+      res.end();
+      return;
+    }
+
     const context = chunks
       .map(
         (c: any) =>

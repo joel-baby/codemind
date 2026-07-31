@@ -12,7 +12,7 @@ const citationSchema = new mongoose.Schema(
 const messageSchema = new mongoose.Schema(
   {
     conversationId: { type: mongoose.Schema.Types.ObjectId, ref: "Conversation", required: true },
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     role: { type: String, enum: ["user", "assistant"], required: true },
     content: { type: String, required: true },
     citations: [citationSchema],

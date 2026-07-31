@@ -16,18 +16,19 @@ function Dashboard() {
   const [githubUrl, setGithubUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   const fetchRepositories = async () => {
     try {
       const response = await axios.get(
         "http://localhost:5000/api/repositories",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setRepositories(response.data.repositories);
     } catch (err) {
       console.error("Failed to fetch repositories", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -120,7 +121,9 @@ function Dashboard() {
       )}
 
       <div className="space-y-3">
-        {repositories.length === 0 && (
+        {loading && <p className="text-gray-500">Loading...</p>}
+
+        {!loading && repositories.length === 0 && (
           <p className="text-gray-500">
             No repositories yet. Add one above to get started.
           </p>
