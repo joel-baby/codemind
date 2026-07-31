@@ -4,6 +4,8 @@ import { AuthRequest } from "../middleware/authMiddleware";
 import { searchCodeChunks } from "../utils/vectorSearch";
 import Conversation from "../models/Conversation";
 import Message from "../models/Message";
+import User from "../models/User";
+import { PLAN_LIMITS } from "../config/plans";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -13,6 +15,27 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
 
     if (!repositoryId || !question) {
       return res.status(400).json({ message: "repositoryId and question are required" });
+    }
+
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const limits = PLAN_LIMITS[user.plan as "free" | "pro"];
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const messagesToday = await Message.countDocuments({
+      userId: req.userId,
+      role: "user",
+      createdAt: { $gte: startOfDay },
+    });
+
+    if (messagesToday >= limits.maxMessagesPerDay) {
+      return res.status(403).json({
+        message: `You've reached your daily limit of ${limits.maxMessagesPerDay} messages. Try again tomorrow or upgrade your plan.`,
+      });
     }
 
     // Find or create the conversation
@@ -31,6 +54,7 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
     // Save the user's message
     await Message.create({
       conversationId: conversation._id,
+      userId: req.userId,
       role: "user",
       content: question,
     });

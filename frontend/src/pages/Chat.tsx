@@ -31,13 +31,14 @@ function Chat() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [streaming, setStreaming] = useState(false);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [limitError, setLimitError] = useState("");
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const fetchConversations = async () => {
     const response = await axios.get(
       `http://localhost:5000/api/chat/conversations/${repositoryId}`,
-      { headers: { Authorization: `Bearer ${token}` } }
+      { headers: { Authorization: `Bearer ${token}` } },
     );
     setConversations(response.data.conversations);
   };
@@ -53,13 +54,18 @@ function Chat() {
   const startNewChat = () => {
     setConversationId(null);
     setMessages([]);
+    setLimitError("");
   };
 
   const loadConversation = async (id: string) => {
     setConversationId(id);
-    const response = await axios.get(`http://localhost:5000/api/chat/messages/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    setLimitError("");
+    const response = await axios.get(
+      `http://localhost:5000/api/chat/messages/${id}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
     setMessages(response.data.messages);
   };
 
@@ -72,6 +78,7 @@ function Chat() {
     setMessages((prev) => [...prev, { role: "user", content: question }]);
     setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
     setStreaming(true);
+    setLimitError("");
 
     try {
       const response = await fetch("http://localhost:5000/api/chat/message", {
@@ -82,6 +89,14 @@ function Chat() {
         },
         body: JSON.stringify({ repositoryId, conversationId, question }),
       });
+
+      if (response.status === 403) {
+        const data = await response.json();
+        setLimitError(data.message);
+        setMessages((prev) => prev.slice(0, -2)); // remove the empty user+assistant messages we optimistically added
+        setStreaming(false);
+        return;
+      }
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
@@ -199,6 +214,12 @@ function Chat() {
           ))}
           <div ref={bottomRef} />
         </div>
+
+        {limitError && (
+          <p className="bg-red-100 text-red-600 text-sm p-2 rounded mb-2">
+            {limitError}
+          </p>
+        )}
 
         <form onSubmit={handleSend} className="flex gap-2">
           <input

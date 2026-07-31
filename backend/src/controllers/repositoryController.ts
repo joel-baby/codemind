@@ -5,9 +5,26 @@ import { AuthRequest } from "../middleware/authMiddleware";
 import { repositoryQueue } from "../queues/repositoryQueue";
 import CodeChunk from "../models/CodeChunk";
 import Conversation from "../models/Conversation";
+import User from "../models/User";
+import { PLAN_LIMITS } from "../config/plans";
 
 export const addRepository = async (req: AuthRequest, res: Response) => {
   try {
+
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const limits = PLAN_LIMITS[user.plan as "free" | "pro"];
+    const currentRepoCount = await Repository.countDocuments({ userId: req.userId });
+
+    if (currentRepoCount >= limits.maxRepositories) {
+      return res.status(403).json({
+        message: `You've reached your plan's limit of ${limits.maxRepositories} repositories. Upgrade to add more.`,
+      });
+    }
+    
     const { githubUrl } = req.body;
 
     if (!githubUrl) {
