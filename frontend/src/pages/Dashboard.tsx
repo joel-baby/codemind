@@ -1,19 +1,75 @@
-import { useAuthStore } from "../store/authStore";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { useAuthStore } from "../store/authStore";
+import { useRepositoryStore } from "../store/repositoryStore";
 
 function Dashboard() {
   const user = useAuthStore((state) => state.user);
+  const token = useAuthStore((state) => state.token);
   const logout = useAuthStore((state) => state.logout);
   const navigate = useNavigate();
+
+  const repositories = useRepositoryStore((state) => state.repositories);
+  const setRepositories = useRepositoryStore((state) => state.setRepositories);
+
+  const [githubUrl, setGithubUrl] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const fetchRepositories = async () => {
+    try {
+      const response = await axios.get("http://localhost:5000/api/repositories", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setRepositories(response.data.repositories);
+    } catch (err) {
+      console.error("Failed to fetch repositories", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchRepositories();
+    // Poll every 3 seconds so "processing" repos update to "ready" automatically
+    const interval = setInterval(fetchRepositories, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleAddRepo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSubmitting(true);
+
+    try {
+      await axios.post(
+        "http://localhost:5000/api/repositories",
+        { githubUrl },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setGithubUrl("");
+      fetchRepositories();
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Something went wrong");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
 
+  const statusColors: Record<string, string> = {
+    pending: "bg-gray-200 text-gray-700",
+    processing: "bg-yellow-100 text-yellow-700",
+    ready: "bg-green-100 text-green-700",
+    failed: "bg-red-100 text-red-700",
+  };
+
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-8 max-w-3xl mx-auto">
+      <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold">Welcome, {user?.name}</h1>
         <button
           onClick={handleLogout}
@@ -22,7 +78,56 @@ function Dashboard() {
           Log Out
         </button>
       </div>
-      <p className="text-gray-600">Your repositories will show up here soon.</p>
+
+      <form onSubmit={handleAddRepo} className="mb-8 flex gap-2">
+        <input
+          type="text"
+          placeholder="https://github.com/owner/repo"
+          value={githubUrl}
+          onChange={(e) => setGithubUrl(e.target.value)}
+          className="flex-1 border p-2 rounded"
+          required
+        />
+        <button
+          type="submit"
+          disabled={submitting}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+        >
+          {submitting ? "Adding..." : "Add Repo"}
+        </button>
+      </form>
+
+      {error && (
+        <p className="bg-red-100 text-red-600 text-sm p-2 rounded mb-4">{error}</p>
+      )}
+
+      <div className="space-y-3">
+        {repositories.length === 0 && (
+          <p className="text-gray-500">No repositories yet. Add one above to get started.</p>
+        )}
+
+        {repositories.map((repo) => (
+          <div
+            key={repo._id}
+            onClick={() => repo.status === "ready" && navigate(`/chat/${repo._id}`)}
+            className={`border rounded p-4 flex justify-between items-center ${
+              repo.status === "ready" ? "cursor-pointer hover:bg-gray-50" : "cursor-default"
+            }`}
+          >
+            <div>
+              <p className="font-semibold">
+                {repo.owner}/{repo.name}
+              </p>
+              <p className="text-sm text-gray-500">{repo.fileCount} files</p>
+            </div>
+            <span
+              className={`text-xs px-2 py-1 rounded-full ${statusColors[repo.status]}`}
+            >
+              {repo.status}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

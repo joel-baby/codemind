@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
+import Chat from "./pages/Chat";
 import { useAuthStore } from "./store/authStore";
 
 function App() {
@@ -16,7 +17,14 @@ function App() {
           path="/dashboard"
           element={token ? <Dashboard /> : <Navigate to="/login" />}
         />
-        <Route path="*" element={<Navigate to={token ? "/dashboard" : "/login"} />} />
+        <Route
+          path="/chat/:repositoryId"
+          element={token ? <Chat /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="*"
+          element={<Navigate to={token ? "/dashboard" : "/login"} />}
+        />
       </Routes>
     </BrowserRouter>
   );
