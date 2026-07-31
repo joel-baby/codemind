@@ -9,6 +9,7 @@ function Dashboard() {
   const token = useAuthStore((state) => state.token);
   const logout = useAuthStore((state) => state.logout);
   const navigate = useNavigate();
+  const setAuth = useAuthStore((state) => state.setAuth);
 
   const repositories = useRepositoryStore((state) => state.repositories);
   const setRepositories = useRepositoryStore((state) => state.setRepositories);
@@ -77,6 +78,19 @@ function Dashboard() {
     navigate("/login");
   };
 
+  const handleUpgrade = async () => {
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/auth/upgrade",
+        {},
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      setAuth(response.data.user, token!);
+    } catch (err) {
+      console.error("Failed to switch plan", err);
+    }
+  };
+
   const statusColors: Record<string, string> = {
     pending: "bg-gray-200 text-gray-700",
     processing: "bg-yellow-100 text-yellow-700",
@@ -87,13 +101,34 @@ function Dashboard() {
   return (
     <div className="p-8 max-w-3xl mx-auto">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold">Welcome, {user?.name}</h1>
-        <button
-          onClick={handleLogout}
-          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-        >
-          Log Out
-        </button>
+        <div>
+          <h1 className="text-2xl font-bold">Welcome, {user?.name}</h1>
+          <span
+            className={`text-xs px-2 py-1 rounded-full ${
+              user?.plan === "pro"
+                ? "bg-purple-100 text-purple-700"
+                : "bg-gray-200 text-gray-700"
+            }`}
+          >
+            {user?.plan === "pro" ? "Pro Plan" : "Free Plan"}
+          </span>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={handleUpgrade}
+            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 text-sm"
+          >
+            {user?.plan === "pro"
+              ? "Switch to Free (Demo)"
+              : "Upgrade to Pro (Demo)"}
+          </button>
+          <button
+            onClick={handleLogout}
+            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+          >
+            Log Out
+          </button>
+        </div>
       </div>
 
       <form onSubmit={handleAddRepo} className="mb-8 flex gap-2">

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User";
+import { AuthRequest } from "../middleware/authMiddleware";
 
 export const signup = async (req: Request, res: Response) => {
   try {
@@ -74,6 +75,25 @@ export const login = async (req: Request, res: Response) => {
         name: user.name,
         email: user.email,
       },
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong", error });
+  }
+};
+
+export const upgradePlan = async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.plan = user.plan === "free" ? "pro" : "free";
+    await user.save();
+
+    res.status(200).json({
+      message: `Plan switched to ${user.plan}`,
+      user: { id: user._id, name: user.name, email: user.email, plan: user.plan },
     });
   } catch (error) {
     res.status(500).json({ message: "Something went wrong", error });
