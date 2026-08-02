@@ -26,13 +26,32 @@ const TEMP_DIR = path.join(__dirname, "..", "temp");
 
 // File extensions we actually care about (skip images, fonts, lockfiles, etc.)
 const CODE_EXTENSIONS = [
-  ".js", ".jsx", ".ts", ".tsx", ".py", ".java", ".go", ".rb",
-  ".php", ".c", ".cpp", ".h", ".cs", ".rs", ".md",
+  ".js",
+  ".jsx",
+  ".ts",
+  ".tsx",
+  ".py",
+  ".java",
+  ".go",
+  ".rb",
+  ".php",
+  ".c",
+  ".cpp",
+  ".h",
+  ".cs",
+  ".rs",
+  ".md",
 ];
 
 // Folders we never want to look inside
 const IGNORED_FOLDERS = [
-  "node_modules", ".git", "dist", "build", "vendor", ".next", "coverage",
+  "node_modules",
+  ".git",
+  "dist",
+  "build",
+  "vendor",
+  ".next",
+  "coverage",
 ];
 
 function getAllCodeFiles(dir: string, fileList: string[] = []): string[] {
@@ -72,7 +91,7 @@ const worker = new Worker(
     console.log(`Processing repo: ${repository.owner}/${repository.name}`);
 
     const repoInfo = await axios.get(
-      `https://api.github.com/repos/${repository.owner}/${repository.name}`
+      `https://api.github.com/repos/${repository.owner}/${repository.name}`,
     );
     const defaultBranch = repoInfo.data.default_branch;
 
@@ -99,7 +118,8 @@ const worker = new Worker(
     if (codeFiles.length === 0) {
       fs.rmSync(extractPath, { recursive: true, force: true });
       repository.status = "failed";
-      repository.errorMessage = "No supported code files found in this repository.";
+      repository.errorMessage =
+        "No supported code files found in this repository.";
       await repository.save();
       return { fileCount: 0 };
     }
@@ -139,11 +159,13 @@ const worker = new Worker(
           endLine: chunk.endLine,
           type: chunk.type,
           embedding: await generateEmbedding(chunk.content),
-        }))
+        })),
       );
 
       await CodeChunk.insertMany(docsToInsert);
-      console.log(`Embedded and saved ${Math.min(i + BATCH_SIZE, allChunks.length)}/${allChunks.length} chunks`);
+      console.log(
+        `Embedded and saved ${Math.min(i + BATCH_SIZE, allChunks.length)}/${allChunks.length} chunks`,
+      );
     }
 
     console.log("All chunks embedded and saved.");
@@ -154,7 +176,11 @@ const worker = new Worker(
 
     return { fileCount: codeFiles.length, chunkCount: allChunks.length };
   },
-  { connection }
+  {
+    connection,
+    lockDuration: 300000, // 5 minutes
+    stalledInterval: 300000,
+  },
 );
 
 worker.on("completed", (job) => {
