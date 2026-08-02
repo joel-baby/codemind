@@ -37,7 +37,7 @@ function Chat() {
 
   const fetchConversations = async () => {
     const response = await axios.get(
-      `http://localhost:5000/api/chat/conversations/${repositoryId}`,
+      `${import.meta.env.VITE_API_URL}/api/chat/conversations/${repositoryId}`,
       { headers: { Authorization: `Bearer ${token}` } },
     );
     setConversations(response.data.conversations);
@@ -63,7 +63,7 @@ function Chat() {
     setConversationId(id);
     setLimitError("");
     const response = await axios.get(
-      `http://localhost:5000/api/chat/messages/${id}`,
+      `${import.meta.env.VITE_API_URL}/api/chat/messages/${id}`,
       {
         headers: { Authorization: `Bearer ${token}` },
       },
@@ -83,14 +83,17 @@ function Chat() {
     setLimitError("");
 
     try {
-      const response = await fetch("http://localhost:5000/api/chat/message", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/chat/message`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ repositoryId, conversationId, question }),
         },
-        body: JSON.stringify({ repositoryId, conversationId, question }),
-      });
+      );
 
       if (response.status === 403) {
         const data = await response.json();

@@ -22,7 +22,7 @@ function Dashboard() {
   const fetchRepositories = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:5000/api/repositories",
+        `${import.meta.env.VITE_API_URL}/api/repositories`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
       setRepositories(response.data.repositories);
@@ -47,7 +47,7 @@ function Dashboard() {
 
     try {
       await axios.post(
-        "http://localhost:5000/api/repositories",
+        `${import.meta.env.VITE_API_URL}/api/repositories`,
         { githubUrl },
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -68,9 +68,12 @@ function Dashboard() {
     if (!confirm("Delete this repository and all its chat history?")) return;
 
     try {
-      await axios.delete(`http://localhost:5000/api/repositories/${repoId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await axios.delete(
+        `${import.meta.env.VITE_API_URL}/api/repositories/${repoId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       fetchRepositories();
     } catch (err) {
       console.error("Failed to delete repository", err);
@@ -85,7 +88,7 @@ function Dashboard() {
   const handleUpgrade = async () => {
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/auth/upgrade",
+        `${import.meta.env.VITE_API_URL}/api/auth/upgrade`,
         {},
         { headers: { Authorization: `Bearer ${token}` } },
       );

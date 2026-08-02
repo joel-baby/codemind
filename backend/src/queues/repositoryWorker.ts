@@ -10,6 +10,14 @@ import { connectDB } from "../config/db";
 import { chunkFile } from "../utils/codeChunker";
 import { generateEmbedding } from "../utils/embeddings";
 import CodeChunk from "../models/CodeChunk";
+import express from "express";
+
+const healthApp = express();
+healthApp.get("/", (req, res) => res.send("Worker is running"));
+const HEALTH_PORT = process.env.PORT || 3001;
+healthApp.listen(HEALTH_PORT, () => {
+  console.log(`Worker health check listening on port ${HEALTH_PORT}`);
+});
 
 dotenv.config();
 connectDB();
