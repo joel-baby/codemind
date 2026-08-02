@@ -37,6 +37,7 @@ function Dashboard() {
     fetchRepositories();
     const interval = setInterval(fetchRepositories, 3000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleAddRepo = async (e: React.FormEvent) => {
@@ -52,8 +53,11 @@ function Dashboard() {
       );
       setGithubUrl("");
       fetchRepositories();
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Something went wrong");
+    } catch (err) {
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.message
+        : "Something went wrong";
+      setError(message || "Something went wrong");
     } finally {
       setSubmitting(false);
     }

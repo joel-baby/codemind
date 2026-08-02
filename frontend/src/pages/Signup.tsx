@@ -19,16 +19,22 @@ function Signup() {
     setLoading(true);
 
     try {
-      const response = await axios.post("http://localhost:5000/api/auth/signup", {
-        name,
-        email,
-        password,
-      });
+      const response = await axios.post(
+        "http://localhost:5000/api/auth/signup",
+        {
+          name,
+          email,
+          password,
+        },
+      );
 
       setAuth(response.data.user, response.data.token);
       navigate("/dashboard");
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Something went wrong");
+    } catch (err) {
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.message
+        : "Something went wrong";
+      setError(message || "Something went wrong");
     } finally {
       setLoading(false);
     }

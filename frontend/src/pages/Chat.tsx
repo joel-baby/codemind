@@ -44,7 +44,9 @@ function Chat() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchConversations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [repositoryId]);
 
   useEffect(() => {
