@@ -6,15 +6,19 @@ import Conversation from "../models/Conversation";
 import Message from "../models/Message";
 import User from "../models/User";
 import { PLAN_LIMITS } from "../config/plans";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
 
 export const sendMessage = async (req: AuthRequest, res: Response) => {
   try {
     const { repositoryId, conversationId, question } = req.body;
 
     if (!repositoryId || !question) {
-      return res.status(400).json({ message: "repositoryId and question are required" });
+      return res
+        .status(400)
+        .json({ message: "repositoryId and question are required" });
     }
 
     const user = await User.findById(req.userId);
@@ -66,10 +70,13 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
       res.setHeader("Content-Type", "text/event-stream");
       res.write(
         `data: ${JSON.stringify({
-          token: "I couldn't find any relevant code in this repository to answer that question. Try rephrasing, or ask about a different part of the codebase.",
-        })}\n\n`
+          token:
+            "I couldn't find any relevant code in this repository to answer that question. Try rephrasing, or ask about a different part of the codebase.",
+        })}\n\n`,
       );
-      res.write(`data: ${JSON.stringify({ done: true, conversationId: conversation._id, citations: [] })}\n\n`);
+      res.write(
+        `data: ${JSON.stringify({ done: true, conversationId: conversation._id, citations: [] })}\n\n`,
+      );
       res.end();
       return;
     }
@@ -77,7 +84,7 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
     const context = chunks
       .map(
         (c: any) =>
-          `File: ${c.filePath} (lines ${c.startLine}-${c.endLine})\n${c.content}`
+          `File: ${c.filePath} (lines ${c.startLine}-${c.endLine})\n${c.content}`,
       )
       .join("\n\n---\n\n");
 
@@ -94,21 +101,41 @@ ${context}`;
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
 
-    const stream = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: question },
-      ],
-      stream: true,
-    });
-
     let fullAnswer = "";
+    let usedFallback = false;
 
-    for await (const chunk of stream) {
-      const token = chunk.choices[0]?.delta?.content || "";
-      fullAnswer += token;
-      res.write(`data: ${JSON.stringify({ token })}\n\n`);
+    try {
+      const stream = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: question },
+        ],
+        stream: true,
+      });
+
+      for await (const chunk of stream) {
+        const token = chunk.choices[0]?.delta?.content || "";
+        fullAnswer += token;
+        res.write(`data: ${JSON.stringify({ token })}\n\n`);
+      }
+    } catch (groqError) {
+      console.warn(
+        "Groq failed, falling back to Gemini:",
+        (groqError as Error).message,
+      );
+      usedFallback = true;
+
+      const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
+      const result = await model.generateContentStream(
+        `${systemPrompt}\n\nQuestion: ${question}`,
+      );
+
+      for await (const chunk of result.stream) {
+        const token = chunk.text();
+        fullAnswer += token;
+        res.write(`data: ${JSON.stringify({ token })}\n\n`);
+      }
     }
 
     // Save the assistant's full answer, with citations, once streaming is done
@@ -132,7 +159,7 @@ ${context}`;
           startLine: c.startLine,
           endLine: c.endLine,
         })),
-      })}\n\n`
+      })}\n\n`,
     );
     res.end();
   } catch (error: any) {
@@ -169,7 +196,9 @@ export const getMessages = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: "Conversation not found" });
     }
 
-    const messages = await Message.find({ conversationId }).sort({ createdAt: 1 });
+    const messages = await Message.find({ conversationId }).sort({
+      createdAt: 1,
+    });
     res.status(200).json({ messages });
   } catch (error) {
     res.status(500).json({ message: "Something went wrong", error });
