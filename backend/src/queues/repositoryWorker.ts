@@ -114,14 +114,13 @@ const worker = new Worker(
 
     const codeFiles = getAllCodeFiles(extractPath);
     console.log(`Found ${codeFiles.length} relevant code files`);
-
-    if (codeFiles.length === 0) {
+    const MAX_FILES = 150;
+    if (codeFiles.length > MAX_FILES) {
       fs.rmSync(extractPath, { recursive: true, force: true });
       repository.status = "failed";
-      repository.errorMessage =
-        "No supported code files found in this repository.";
+      repository.errorMessage = `This repository has ${codeFiles.length} code files, which exceeds our current limit of ${MAX_FILES} for free-tier processing. Try a smaller repository.`;
       await repository.save();
-      return { fileCount: 0 };
+      return { fileCount: codeFiles.length };
     }
 
     console.log("Chunking files...");
