@@ -154,30 +154,34 @@ function Chat() {
   };
 
   return (
-    <div className="flex h-screen">
-      <div className="w-64 border-r p-4 overflow-y-auto">
+    <div className="flex h-screen bg-ink">
+      <div className="w-60 border-r border-border p-4 overflow-y-auto flex flex-col">
         <button
           onClick={() => navigate("/dashboard")}
-          className="text-blue-600 text-sm mb-4 block"
+          className="font-mono text-xs text-text-muted hover:text-accent mb-6 text-left transition-colors"
         >
-          ← Back to Dashboard
+          ← Dashboard
         </button>
 
         <button
           onClick={startNewChat}
-          className="w-full bg-blue-600 text-white py-2 rounded mb-4 text-sm"
+          className="w-full bg-accent text-ink font-mono text-xs font-semibold py-2 rounded mb-6 hover:opacity-90 transition-opacity"
         >
-          + New Chat
+          + New chat
         </button>
 
-        <p className="text-xs text-gray-400 uppercase mb-2">History</p>
-        <div className="space-y-1">
+        <p className="text-xs font-mono text-text-muted uppercase tracking-wide mb-2">
+          History
+        </p>
+        <div className="space-y-1 overflow-y-auto">
           {conversations.map((c) => (
             <button
               key={c._id}
               onClick={() => loadConversation(c._id)}
-              className={`w-full text-left text-sm p-2 rounded truncate ${
-                conversationId === c._id ? "bg-gray-200" : "hover:bg-gray-100"
+              className={`w-full text-left text-xs font-mono p-2 rounded truncate transition-colors ${
+                conversationId === c._id
+                  ? "bg-ink-raised text-text border border-border"
+                  : "text-text-muted hover:bg-ink-raised"
               }`}
             >
               {c.title}
@@ -186,31 +190,44 @@ function Chat() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col p-4 max-w-3xl mx-auto">
+      <div className="flex-1 flex flex-col p-6 max-w-3xl mx-auto w-full">
         <div className="flex-1 overflow-y-auto space-y-4 mb-4">
           {messages.length === 0 && (
-            <p className="text-gray-500 text-center mt-10">
-              Ask a question about this repository to get started.
-            </p>
+            <div className="border border-dashed border-border rounded-lg p-8 text-center mt-10">
+              <p className="text-text-muted font-mono text-sm">
+                Ask a question about this repository to get started.
+              </p>
+            </div>
           )}
 
           {messages.map((msg, i) => (
             <div
               key={i}
-              className={`p-3 rounded-lg max-w-[85%] ${
-                msg.role === "user"
-                  ? "bg-blue-600 text-white ml-auto"
-                  : "bg-gray-100 text-gray-900"
+              className={`${
+                msg.role === "user" ? "ml-auto max-w-[75%]" : "max-w-[85%]"
               }`}
             >
-              <p className="whitespace-pre-wrap">{msg.content || "..."}</p>
+              <div
+                className={`px-4 py-3 rounded-lg ${
+                  msg.role === "user"
+                    ? "bg-accent text-ink font-medium"
+                    : "bg-ink-raised border border-border"
+                }`}
+              >
+                <p className="whitespace-pre-wrap text-sm">
+                  {msg.content || "..."}
+                </p>
+              </div>
 
               {msg.citations && msg.citations.length > 0 && (
-                <div className="mt-2 pt-2 border-t border-gray-300 text-xs space-y-1">
+                <div className="mt-2 space-y-1">
                   {msg.citations.map((c, j) => (
-                    <p key={j} className="text-gray-600">
-                      📄 {c.filePath} (lines {c.startLine}-{c.endLine})
-                    </p>
+                    <div
+                      key={j}
+                      className="font-mono text-xs bg-amber-dim border border-amber/20 rounded px-3 py-1.5 text-amber"
+                    >
+                      @@ {c.filePath} lines {c.startLine}-{c.endLine} @@
+                    </div>
                   ))}
                 </div>
               )}
@@ -220,9 +237,9 @@ function Chat() {
         </div>
 
         {limitError && (
-          <p className="bg-red-100 text-red-600 text-sm p-2 rounded mb-2">
+          <div className="bg-danger-dim border border-danger/30 text-danger text-sm px-3 py-2 rounded mb-2 font-mono">
             {limitError}
-          </p>
+          </div>
         )}
 
         <form onSubmit={handleSend} className="flex gap-2">
@@ -231,13 +248,13 @@ function Chat() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask a question about this codebase..."
-            className="flex-1 border p-2 rounded"
+            className="flex-1 bg-ink-raised border border-border rounded px-3 py-2 font-mono text-sm focus:outline-none focus:border-accent transition-colors"
             disabled={streaming}
           />
           <button
             type="submit"
             disabled={streaming}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+            className="bg-accent text-ink font-mono text-sm font-semibold px-4 py-2 rounded hover:opacity-90 disabled:opacity-50 transition-opacity"
           >
             {streaming ? "Thinking..." : "Send"}
           </button>

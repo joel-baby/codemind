@@ -41,59 +41,76 @@ function Signup() {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-50">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-8 rounded-lg shadow-md w-96"
-      >
-        <h1 className="text-2xl font-bold mb-6 text-center">Create Account</h1>
+    <div className="flex items-center justify-center min-h-screen bg-ink px-4">
+      <div className="w-full max-w-sm">
+        <div className="mb-8 text-center">
+          <span className="font-mono text-accent text-sm tracking-widest uppercase">
+            CodeMind
+          </span>
+          <h1 className="font-mono text-2xl font-semibold mt-2">
+            Create your account
+          </h1>
+        </div>
 
-        {error && (
-          <p className="bg-red-100 text-red-600 text-sm p-2 rounded mb-4">
-            {error}
-          </p>
-        )}
-
-        <input
-          type="text"
-          placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full border p-2 rounded mb-3"
-          required
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full border p-2 rounded mb-3"
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full border p-2 rounded mb-4"
-          required
-        />
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50"
+        <form
+          onSubmit={handleSubmit}
+          className="bg-ink-raised border border-border rounded-lg p-6"
         >
-          {loading ? "Creating account..." : "Sign Up"}
-        </button>
+          {error && (
+            <div className="bg-danger-dim border border-danger/30 text-danger text-sm px-3 py-2 rounded mb-4 font-mono">
+              {error}
+            </div>
+          )}
 
-        <p className="text-sm text-center mt-4">
-          Already have an account?{" "}
-          <Link to="/login" className="text-blue-600">
-            Log in
-          </Link>
-        </p>
-      </form>
+          <label className="block text-xs font-mono text-text-muted mb-1 uppercase tracking-wide">
+            Name
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full bg-ink border border-border rounded px-3 py-2 mb-4 text-text focus:outline-none focus:border-accent transition-colors"
+            required
+          />
+
+          <label className="block text-xs font-mono text-text-muted mb-1 uppercase tracking-wide">
+            Email
+          </label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full bg-ink border border-border rounded px-3 py-2 mb-4 text-text focus:outline-none focus:border-accent transition-colors"
+            required
+          />
+
+          <label className="block text-xs font-mono text-text-muted mb-1 uppercase tracking-wide">
+            Password
+          </label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full bg-ink border border-border rounded px-3 py-2 mb-6 text-text focus:outline-none focus:border-accent transition-colors"
+            required
+          />
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-accent text-ink font-mono font-semibold py-2 rounded hover:opacity-90 disabled:opacity-50 transition-opacity"
+          >
+            {loading ? "Creating account..." : "Sign up"}
+          </button>
+
+          <p className="text-sm text-center mt-5 text-text-muted">
+            Already have an account?{" "}
+            <Link to="/login" className="text-accent hover:underline">
+              Log in
+            </Link>
+          </p>
+        </form>
+      </div>
     </div>
   );
 }
