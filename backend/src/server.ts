@@ -30,10 +30,6 @@ app.get("/api/hello", (req, res) => {
   res.json({ message: "Hello from the backend!" });
 });
 
-app.get("/debug-sentry", () => {
-  throw new Error("Testing Sentry error tracking");
-});
-
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI as string;
 
