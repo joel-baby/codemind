@@ -101,13 +101,6 @@ function Dashboard() {
     }
   };
 
-  const statusColors: Record<string, string> = {
-    pending: "bg-gray-200 text-gray-700",
-    processing: "bg-yellow-100 text-yellow-700",
-    ready: "bg-green-100 text-green-700",
-    failed: "bg-red-100 text-red-700",
-  };
-
   return (
     <div className="min-h-screen bg-ink px-6 py-8">
       <div className="max-w-3xl mx-auto">
