@@ -47,7 +47,7 @@ function Signup() {
           <span className="font-mono text-accent text-sm tracking-widest uppercase">
             CodeMind
           </span>
-          <h1 className="font-mono text-2xl font-semibold mt-2">
+          <h1 className="font-sans text-2xl font-semibold mt-2">
             Create your account
           </h1>
         </div>

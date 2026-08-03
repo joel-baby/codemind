@@ -116,7 +116,7 @@ function Dashboard() {
             <span className="font-mono text-accent text-xs tracking-widest uppercase">
               CodeMind
             </span>
-            <h1 className="font-mono text-2xl font-semibold mt-1">
+            <h1 className="font-sans text-2xl font-semibold mt-1">
               {user?.name}
             </h1>
             <span

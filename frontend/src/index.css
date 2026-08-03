@@ -1,43 +1,45 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #0d1117;
-  --color-ink-raised: #161b22;
-  --color-border: #30363d;
-  --color-text: #e6e8eb;
-  --color-text-muted: #8b949e;
-  --color-signal: #39d353;
-  --color-signal-dim: #1a4620;
-  --color-amber: #d29922;
-  --color-amber-dim: #3d2f0f;
-  --color-accent: #7c6ff0;
-  --color-accent-dim: #2a2660;
-  --color-danger: #f85149;
-  --color-danger-dim: #3d1418;
+  --color-ink: #1a1d24;
+  --color-ink-raised: #22262f;
+  --color-border: #363b47;
+  --color-text: #d8dbe0;
+  --color-text-muted: #8b909c;
+  --color-signal: #4caf6d;
+  --color-signal-dim: #1e3324;
+  --color-amber: #c9a04a;
+  --color-amber-dim: #33290f;
+  --color-accent: #8b7fe8;
+  --color-accent-dim: #262247;
+  --color-danger: #e5726a;
+  --color-danger-dim: #331b1a;
 
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
 :root.light {
-  --color-ink: #f6f8fa;
+  --color-ink: #faf9f7;
   --color-ink-raised: #ffffff;
-  --color-border: #d0d7de;
-  --color-text: #1f2328;
-  --color-text-muted: #59636e;
-  --color-signal: #1a7f37;
-  --color-signal-dim: #d3f2dc;
-  --color-amber: #9a6700;
-  --color-amber-dim: #fff1cc;
-  --color-accent: #5b4fd1;
-  --color-accent-dim: #e8e5fc;
-  --color-danger: #cf222e;
-  --color-danger-dim: #ffebe9;
+  --color-border: #e2e0dc;
+  --color-text: #33322f;
+  --color-text-muted: #78766f;
+  --color-signal: #2f8f52;
+  --color-signal-dim: #e4f3e8;
+  --color-amber: #a67a1f;
+  --color-amber-dim: #faf1dd;
+  --color-accent: #6a5cd6;
+  --color-accent-dim: #ece9fa;
+  --color-danger: #c14a42;
+  --color-danger-dim: #fbeae8;
 }
 
 body {
   background-color: var(--color-ink);
   color: var(--color-text);
   font-family: var(--font-sans);
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
